@@ -22,7 +22,7 @@
           "IApN",
           "dphit",
           "dpt"
-        ],
+        ], 
         "plots": [
           {
             "var": "dalphat",

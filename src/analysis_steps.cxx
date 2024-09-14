@@ -80,7 +80,7 @@ auto analysis_entry_handle(ROOT::RDF::RNode preprocessed_node,
     std::string name = plotentry["name"];
     double xmin = plotentry.value("xmin", 0.0);
     double xmax = plotentry.value("xmax", 0.0);
-    int nbins = plotentry.value("nbins", 128);
+    int nbins = plotentry.value("nbins", 260);
     auto cut = plotentry.value("cut", nlohmann::json{});
     std::string wname = plotentry.value("wname", "");
     hist1ds.emplace_back(

@@ -13,7 +13,11 @@
 #include <set>
 #include <type_traits>
 #include <vector>
+#include <optional>
 #include <tki_general.h>
+
+
+
 
 event::channel get_mode_genie(const TObjString &code) {
   if (code.GetString().Contains("QES")) {
@@ -27,6 +31,7 @@ event::channel get_mode_genie(const TObjString &code) {
   }
   return event::channel::Other;
 }
+
 
 ROOT::RDF::RNode GENIE_RDF_setup_event(ROOT::RDF::RNode df) {
   return df
@@ -89,10 +94,234 @@ ROOT::RDF::RNode GENIE_RDF_setup_event(ROOT::RDF::RNode df) {
 }
 
 
-class pre : ProcessNodeI{
+double get_fuxint(TH1 *h_rate, TGraph *spline) {
+  double fluxint{};
+  TSpline3 sp("sp", spline);
+  TF1 func(
+      "spline", [&](double *x, double *) { return sp.Eval(*x); }, 0,
+      h_rate->GetXaxis()->GetXmax(), 0);
+  for (int ii = 1; ii <= h_rate->GetNbinsX(); ii++) {
+    double bin_c = h_rate->GetBinContent(ii);
+    double bin_up = h_rate->GetXaxis()->GetBinUpEdge(ii);
+    double bin_low = h_rate->GetXaxis()->GetBinLowEdge(ii);
+    double bin_width = bin_up - bin_low;
+    if (bin_c < 1 || func.Integral(bin_low, bin_up) == 0) {
+      continue;
+    }
+    fluxint += bin_c / func.Integral(bin_low, bin_up) * bin_width;
+  }
+  return fluxint;
+}
+
+class MINERvAGFS0PI : public ProcessNodeI {
 public:
   ROOT::RDF::RNode operator()(ROOT::RDF::RNode df) override {
-    return GENIE_RDF_setup_event(df);
+    return MINERvAGFSPIZERO_f(GENIE_RDF_setup_event(df));
   }
 };
 
+class normalize_factor_CC : public NormalizeI {
+public:
+  double operator()(ROOT::RDF::RNode df) override {
+    TFile root_file{filename.c_str(), "READ"};
+    auto nu_mu_C12 =
+        static_cast<TGraph *>(root_file.Get("nu_mu_C12/tot_cc")->Clone());
+    //auto nu_mu_H1 =
+        //static_cast<TGraph *>(root_file.Get("nu_mu_H1/tot_cc")->Clone());
+
+
+    ROOT::RDF::TH1DModel h_model{"", "", 20, 0, 20};
+    auto dfcc = df.Filter(
+        [](const TObjString &EvtCode) {
+          return EvtCode.GetString().Contains("CC");
+        },
+        {"EvtCode"});
+    auto get_hist_neutrinoE_cc = [&](int neutrino, int nucleus) {
+      return dfcc
+          .Filter(
+              [=](const ROOT::RVec<int> &StdHepPdg) {
+                return StdHepPdg[0] == neutrino && StdHepPdg[1] == nucleus;
+              },
+              {"StdHepPdg"})
+          .Define(
+              "neutrinoE",
+              [](const ROOT::RVec<double> &StdHepP4) { return StdHepP4[3]; },
+              {"StdHepP4"})
+          .Histo1D(h_model, "neutrinoE");
+    };
+    auto h_nu_mu_C12 = get_hist_neutrinoE_cc(14, 1000060120);
+    //auto h_nu_mu_H1 = get_hist_neutrinoE_cc(14, 2212);
+
+
+    auto event_count = dfcc.Count().GetValue();
+    auto total_fluxint =
+        get_fuxint(h_nu_mu_C12.GetPtr(), nu_mu_C12) * 13;
+        
+    auto xsec_per_nucleon = event_count / total_fluxint;
+    
+    // Divide by 10^38
+    xsec_per_nucleon /= 1e38;
+
+    std::cout << "Total event count: " << event_count << std::endl;
+    std::cout << "Total fluxint: " << total_fluxint << std::endl;
+    std::cout << "Cross section per nucleon (divided by 10^38): " << xsec_per_nucleon << std::endl;
+    
+    return xsec_per_nucleon / event_count;
+  }
+
+  void configure(const nlohmann::json &conf) override {
+    filename = conf["filename"];
+  }
+
+private:
+  std::string filename;
+};
+
+REGISTER_NORMALIZE(normalize_factor_CC);
+REGISTER_PROCESS_NODE(MINERvAGFS0PI);
+
+// ProcessNode classes
+class CCQEPure : public ProcessNodeI {
+public:
+  ROOT::RDF::RNode operator()(ROOT::RDF::RNode df) override {
+    return df.Filter(
+        [](event &e) {
+          return e.get_mode() == event::channel::QE;
+        },
+        {"event"}, "CUTRES");
+  }
+};
+class CCQEPure0pi : public ProcessNodeI {
+public:
+  ROOT::RDF::RNode operator()(ROOT::RDF::RNode df) override {
+    return df.Filter(
+        [](event &e) {
+          return e.get_mode() == event::channel::QE &&
+                 (e.count_out(211) + e.count_out(111) + e.count_out(-211)) == 0;
+        },
+        {"event"}, "CUTRES");
+  }
+};
+REGISTER_PROCESS_NODE(CCQEPure0pi)
+
+class CCRESPure0pi : public ProcessNodeI {
+public:
+  ROOT::RDF::RNode operator()(ROOT::RDF::RNode df) override {
+    return df.Filter(
+        [](event &e) {
+          return e.get_mode() == event::channel::RES &&
+                 (e.count_out(211) + e.count_out(111) + e.count_out(-211)) == 0;
+        },
+        {"event"}, "CUTRES");
+  }
+};
+REGISTER_PROCESS_NODE(CCRESPure0pi)
+
+class CCDISPure0pi : public ProcessNodeI {
+public:
+  ROOT::RDF::RNode operator()(ROOT::RDF::RNode df) override {
+    return df.Filter(
+        [](event &e) {
+          return e.get_mode() == event::channel::DIS &&
+                 (e.count_out(211) + e.count_out(111) + e.count_out(-211)) == 0;
+        },
+        {"event"}, "CUTRES");
+  }
+};
+REGISTER_PROCESS_NODE(CCDISPure0pi)
+
+class CCMECPure0pi : public ProcessNodeI {
+public:
+  ROOT::RDF::RNode operator()(ROOT::RDF::RNode df) override {
+    return df.Filter(
+        [](event &e) {
+          return e.get_mode() == event::channel::MEC &&
+                 (e.count_out(211) + e.count_out(111) + e.count_out(-211)) == 0;
+        },
+        {"event"}, "CUTRES");
+  }
+};
+REGISTER_PROCESS_NODE(CCMECPure0pi)
+
+class CCotherPure0pi : public ProcessNodeI {
+public:
+  ROOT::RDF::RNode operator()(ROOT::RDF::RNode df) override {
+    return df.Filter(
+        [](event &e) {
+          return e.get_mode() == event::channel::Other &&
+                 (e.count_out(211) + e.count_out(111) + e.count_out(-211)) == 0;
+        },
+        {"event"}, "CUTRES");
+  }
+};
+REGISTER_PROCESS_NODE(CCotherPure0pi)
+
+class CCRESPure1pi : public ProcessNodeI {
+public:
+  ROOT::RDF::RNode operator()(ROOT::RDF::RNode df) override {
+    return df.Filter(
+        [](event &e) {
+          return e.get_mode() == event::channel::RES &&
+                 (e.count_out(211) + e.count_out(111) + e.count_out(-211)) == 1;
+        },
+        {"event"}, "CUTRES");
+  }
+};
+
+REGISTER_PROCESS_NODE(CCRESPure1pi)
+
+class CCRESPureMpi : public ProcessNodeI {
+public:
+  ROOT::RDF::RNode operator()(ROOT::RDF::RNode df) override {
+    return df.Filter(
+        [](event &e) {
+          return e.get_mode() == event::channel::RES &&
+                 (e.count_out(211) + e.count_out(111) + e.count_out(-211)) > 1;
+        },
+        {"event"}, "CUTRES");
+  }
+};
+
+REGISTER_PROCESS_NODE(CCRESPureMpi)
+
+class CCDISPure1pi : public ProcessNodeI {
+public:
+  ROOT::RDF::RNode operator()(ROOT::RDF::RNode df) override {
+    return df.Filter(
+        [](event &e) {
+          return e.get_mode() == event::channel::DIS &&
+                 (e.count_out(211) + e.count_out(111) + e.count_out(-211)) == 1;
+        },
+        {"event"}, "CUTRES");
+  }
+};
+
+REGISTER_PROCESS_NODE(CCDISPure1pi)
+
+class CCDISPureMpi : public ProcessNodeI {
+public:
+  ROOT::RDF::RNode operator()(ROOT::RDF::RNode df) override {
+    return df.Filter(
+        [](event &e) {
+          return e.get_mode() == event::channel::DIS &&
+                 (e.count_out(211) + e.count_out(111) + e.count_out(-211)) > 1;
+        },
+        {"event"}, "CUTRES");
+  }
+};
+
+REGISTER_PROCESS_NODE(CCDISPureMpi)
+
+
+class CCQEPure1pi : public ProcessNodeI {
+public:
+  ROOT::RDF::RNode operator()(ROOT::RDF::RNode df) override {
+    return df.Filter(
+        [](event &e) {
+          return e.get_mode() == event::channel::QE &&
+                 (e.count_out(211) + e.count_out(111) + e.count_out(-211)) == 1;
+        },
+        {"event"}, "CUTRES");
+  }
+};
+REGISTER_PROCESS_NODE(CCQEPure1pi)

@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
+set(CMAKE_PREFIX_PATH "/sps/juno/ycao/tools/json")
+
 project(nuanalysis)
 include(FetchContent)
 find_package(nlohmann_json)

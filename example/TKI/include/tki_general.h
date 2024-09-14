@@ -19,6 +19,8 @@ template <typename T_> eq_range(T_ &&) -> eq_range<std::remove_reference_t<T_>>;
 class event {
 public:
   enum class channel { QE, RES, DIS, MEC, Other };
+  bool passesCC0piSelection() const;
+  bool passesCCpi0Selection() const;
 
 private:
   std::unordered_multimap<int, TLorentzVector> in_particles{};
@@ -120,8 +122,8 @@ std::array<double, 8> getCommonTKI(const int targetA, const int targetZ,
                                    const TLorentzVector *tmp4pScatter,
                                    const TLorentzVector *tmp4pRecoil);
 
-// ROOT::RDF::RNode MINERvAGFSPIZERO_analysis(ROOT::RDF::RNode df);
-// ROOT::RDF::RNode MINERvAGFS0PI_analysis(ROOT::RDF::RNode df);
+ROOT::RDF::RNode MINERvAGFSPIZERO_f(ROOT::RDF::RNode df);
+ROOT::RDF::RNode MINERvAGFS0PI_f(ROOT::RDF::RNode df);
 ROOT::RDF::RNode MINERvAGFS_general(ROOT::RDF::RNode df);
 ROOT::RDF::RNode MINERvAGFS_do_TKI(ROOT::RDF::RNode df);
 
