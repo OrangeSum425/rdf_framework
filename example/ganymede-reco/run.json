@@ -28,7 +28,9 @@
             "xBj",
             "npi0",
             "npi_charged",
-            "n_neutron"
+            "n_neutron",
+            "Enu",
+            "q0"
           ],
           "plots": [
             {
@@ -37,6 +39,13 @@
               "xmin": 0,
               "xmax": 10,
               "bins": 128
+            },
+            {
+              "var": "n_neutron_d",
+              "name": "n_neutron",
+              "xmin": -0.5,
+              "xmax": 12.5,
+              "bins": 13
             },
             {
               "var": "W",
@@ -58,6 +67,160 @@
               "xmin": 0,
               "xmax": 1.0,
               "bins": 128
+            },
+            {
+              "name": "th2d_Enu_q0",
+              "bins_list": [
+                {
+                  "var": "Enu",
+                  "min": 0,
+                  "max": 20,
+                  "bins": 20
+                },
+                {
+                  "var": "q0",
+                  "min": 0,
+                  "max": 10,
+                  "bins": 10
+                }
+              ]
+            },
+            {
+              "name": "th2d_Enu_Q2",
+              "bins_list": [
+                {
+                  "var": "Enu",
+                  "min": 0,
+                  "max": 20,
+                  "bins": 20
+                },
+                {
+                  "var": "Q2",
+                  "min": 0,
+                  "max": 10,
+                  "bins": 10
+                }
+              ]
+            },
+            {
+              "name": "th2d_Enu_xBj_rest",
+              "bins_list": [
+                {
+                  "var": "Enu",
+                  "min": 0,
+                  "max": 20,
+                  "bins": 20
+                },
+                {
+                  "var": "xBj_rest",
+                  "min": 0,
+                  "max": 1.1,
+                  "bins": 10
+                }
+              ]
+            },
+            {
+              "name": "th2d_Enu_y",
+              "bins_list": [
+                {
+                  "var": "Enu",
+                  "min": 0,
+                  "max": 20,
+                  "bins": 20
+                },
+                {
+                  "var": "y",
+                  "min": 0,
+                  "max": 1,
+                  "bins": 10
+                }
+              ]
+            },
+            {
+              "name": "th2d_Q2_W",
+              "bins_list": [
+                {
+                  "var": "Q2",
+                  "min": 0,
+                  "max": 10,
+                  "bins": 16
+                },
+                {
+                  "var": "W",
+                  "min": 0,
+                  "max": 10,
+                  "bins": 16
+                }
+              ]
+            },
+            {
+              "name": "th3d_Q2_W_xbj",
+              "bins_list": [
+                {
+                  "var": "Q2",
+                  "min": 0,
+                  "max": 10,
+                  "bins": 16
+                },
+                {
+                  "var": "W",
+                  "min": 0,
+                  "max": 10,
+                  "bins": 16
+                },
+                {
+                  "var": "xBj",
+                  "min": 0,
+                  "max": 1.2,
+                  "bins": 5
+                }
+              ]
+            },
+            {
+              "name": "th3d_enu_q0_Q2",
+              "bins_list": [
+                {
+                  "var": "Enu",
+                  "min": 0,
+                  "max": 20,
+                  "bins": 20
+                },
+                {
+                  "var": "q0",
+                  "min": 0,
+                  "max": 10,
+                  "bins": 10
+                },
+                {
+                  "var": "Q2",
+                  "min": 0,
+                  "max": 5,
+                  "bins": 5
+                }
+              ]
+            },
+            {
+              "name": "th3d_enu_x_y",
+              "bins_list": [
+                {
+                  "var": "Enu",
+                  "min": 0,
+                  "max": 20,
+                  "bins": 20
+                },
+                {
+                  "var": "xBj_rest",
+                  "min": 0,
+                  "max": 1.2,
+                  "bins": 10
+                },
+                {
+                  "var": "y",
+                  "min": 0,
+                  "max": 1.0,
+                  "bins": 10
+                }
+              ]
             }
           ],
           "cutset": [

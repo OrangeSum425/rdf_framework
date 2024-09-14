@@ -15,6 +15,12 @@ template <typename T> class ProcessNodeT {
 public:
   virtual T operator()(ROOT::RDF::RNode) = 0;
   virtual void configure(const nlohmann::json &) {}
+  ProcessNodeT() = default;
+  ProcessNodeT(const ProcessNodeT &) = default;
+  ProcessNodeT(ProcessNodeT &&) = default;
+  ProcessNodeT &operator=(const ProcessNodeT &) = default;
+  ProcessNodeT &operator=(ProcessNodeT &&) = default;
+  virtual ~ProcessNodeT() = default;
 };
 
 template <typename T> class FactoryT {

@@ -1,4 +1,5 @@
 #include <TFile.h>
+#include <TLorentzVector.h>
 #include <TTree.h>
 #include <array>
 #include <boost/functional/hash.hpp>
@@ -112,7 +113,7 @@ public:
 
 int main(int argc, char **argv) {
   if (argc < 3) {
-    std::cout << "Usage: " << argv[0] << "<map_file> <input_file> <output_file> [Nuid]"
+    std::cout << "Usage: " << argv[0] << "<map_file> <input_file> <output_file> [neutrino id (default 14)]"
               << std::endl;
     return 1;
   }
@@ -120,7 +121,7 @@ int main(int argc, char **argv) {
   gibuu_to_pdg::get_instance(map_file);
   std::string input_file = argv[2];
   std::string output_file = argv[3];
-  int Nuid = argc > 3 ? std::stoi(argv[4]) : 0;
+  int Nuid = argc > 4 ? std::stoi(argv[4]) : 14;
   std::ifstream input(input_file);
   auto out_tree = std::make_unique<TTree>("out_tree", "out_tree");
   constexpr int max_n = 256;
@@ -151,7 +152,7 @@ int main(int argc, char **argv) {
     StdHepP4[0][3] = e.enu;
     StdHepP4[0][0] = 0;
     StdHepP4[0][1] = 0;
-    StdHepP4[0][2] = 0;
+    StdHepP4[0][2] = e.enu;
     StdHepX4[0][0] = 0;
     StdHepX4[0][1] = 0;
     StdHepX4[0][2] = 0;

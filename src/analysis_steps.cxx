@@ -8,8 +8,10 @@
 #include <TChain.h>
 #include <dlfcn.h>
 #include <memory>
+// #include <optional>
+// #include <ranges>
 #include <tuple>
-#include <unordered_map>
+// #include <unordered_map>
 
 std::tuple<std::unique_ptr<TChain>, std::vector<std::unique_ptr<TChain>>>
 prepare_chain(nlohmann::json &j) {
@@ -38,6 +40,31 @@ prepare_chain(nlohmann::json &j) {
   return ret;
 }
 
+std::vector<axis> get_bins(nlohmann::json &j) {
+  std::vector<axis> ret{};
+  if (j.find("bins_list") != j.end()) {
+    for (auto &&bin_obj : j["bins_list"]) {
+      ret.push_back(
+          {bin_obj["var"], bin_obj["min"], bin_obj["max"], bin_obj["bins"]});
+    }
+    return ret;
+  } else {
+    if (j.find("var") != j.end() && j.find("bins") != j.end()) { // 1D case
+      ret.push_back({j["var"], j["xmin"], j["xmax"], j["bins"]});
+      return ret;
+    } else { // 2-3D case
+      ret.push_back({j["varx"], j["xmin"], j["xmax"], j["binsx"]});
+      if (j.find("vary") != j.end()) {
+        ret.push_back({j["vary"], j["ymin"], j["ymax"], j["binsy"]});
+      }
+      if (j.find("varz") != j.end()) {
+        ret.push_back({j["varz"], j["zmin"], j["zmax"], j["binsz"]});
+      }
+      return ret;
+    }
+  }
+}
+
 auto analysis_entry_handle(ROOT::RDF::RNode preprocessed_node,
                            nlohmann::json &analysis_entry) {
   auto func = get_node_process_callable(analysis_entry["func"]);
@@ -45,13 +72,13 @@ auto analysis_entry_handle(ROOT::RDF::RNode preprocessed_node,
     throw std::runtime_error("Failed to get analysis function");
   auto result_node = (*func)(preprocessed_node);
   std::tuple<
-      std::string, std::vector<ROOT::RDF::RResultPtr<TH1D>>,
+      std::string, std::vector<ROOT::RDF::RResultPtr<TH1>>,
       std::vector<std::pair<THStack, std::vector<ROOT::RDF::RResultPtr<TH1D>>>>,
-      std::vector<ROOT::RDF::RResultPtr<TH2D>>,
+      // std::vector<ROOT::RDF::RResultPtr<TH2D>>,
       ROOT::RDF::RResultPtr<
           ROOT::RDF::RInterface<ROOT::Detail::RDF::RLoopManager>>>
       ret{};
-  auto &&[plot_file, hist1ds, plots, hist2ds, snapshot_action] = ret;
+  auto &&[plot_file, hist1ds, plots, snapshot_action] = ret;
   plot_file = analysis_entry["plot_file"].get<std::string>();
 
   auto cutset = analysis_entry.value("cutset", nlohmann::json{});
@@ -76,18 +103,27 @@ auto analysis_entry_handle(ROOT::RDF::RNode preprocessed_node,
 
   // plot 1D hists
   for (auto &plotentry : analysis_entry["plots"]) {
-    std::string var = plotentry["var"];
     std::string name = plotentry["name"];
-    double xmin = plotentry.value("xmin", 0.0);
-    double xmax = plotentry.value("xmax", 0.0);
-    int nbins = plotentry.value("nbins", 260);
+    auto bin_obj = get_bins(plotentry);
     auto cut = plotentry.value("cut", nlohmann::json{});
     std::string wname = plotentry.value("wname", "");
-    hist1ds.emplace_back(
-        draw_hists(result_node, var, name, xmin, xmax, nbins, cut, wname));
+    hist1ds.emplace_back(draw_hists_nd(result_node, name, bin_obj, cut, wname));
     for (auto &[cutname, cutnode] : cut_nodes) {
-      hist1ds.emplace_back(draw_hists(cutnode, var, name + "_" + cutname, xmin,
-                                      xmax, nbins, cut, wname));
+      hist1ds.emplace_back(
+          draw_hists_nd(cutnode, name + "_" + cutname, bin_obj, cut, wname));
+    }
+  }
+
+  // Plot Hist2D
+  for (auto &plotentry : analysis_entry["plot_2d"]) {
+    std::string name = plotentry["name"];
+    auto bin_obj = get_bins(plotentry);
+    auto cut = plotentry.value("cut", nlohmann::json{});
+    std::string wname = plotentry.value("wname", "");
+    hist1ds.emplace_back(draw_hists_nd(result_node, name, bin_obj, cut, wname));
+    for (auto &[cutname, cutnode] : cut_nodes) {
+      hist1ds.emplace_back(
+          draw_hists_nd(cutnode, name + "_" + cutname, bin_obj, cut, wname));
     }
   }
 
@@ -102,34 +138,38 @@ auto analysis_entry_handle(ROOT::RDF::RNode preprocessed_node,
     auto &&[hs, histvec] = plots.emplace_back(
         std::make_pair(THStack{(name + "hs").c_str(), var.c_str()},
                        std::vector<ROOT::RDF::RResultPtr<TH1D>>{}));
+    axis x{var, xmin, xmax, nbins};
     for (auto &cutentry : plotentry["cuts"]) {
-      histvec.emplace_back(draw_hists(result_node, var, name, xmin, xmax, nbins,
-                                      cutentry, wname));
+      histvec.emplace_back(draw_hists(result_node, name, x, cutentry, wname));
     }
   }
 
-  // Plot Hist2D
-  for (auto &plot_2d_entry : analysis_entry["plot_2d"]) {
-    std::string varx = plot_2d_entry["varx"];
-    std::string vary = plot_2d_entry["vary"];
-    std::string name = plot_2d_entry["name"];
-    double xmin = plot_2d_entry.value("xmin", 0.0);
-    double xmax = plot_2d_entry.value("xmax", 0.0);
-    double ymin = plot_2d_entry.value("ymin", 0.0);
-    double ymax = plot_2d_entry.value("ymax", 0.0);
-    int nbinsx = plot_2d_entry.value("nbinsx", 128);
-    int nbinsy = plot_2d_entry.value("nbinsy", 128);
-    auto cut = plot_2d_entry.value("cut", nlohmann::json{});
-    std::string wname = plot_2d_entry.value("wname", "");
-    hist2ds.emplace_back(draw_hists_2d(result_node, varx, vary, name, xmin,
-                                       xmax, ymin, ymax, nbinsx, nbinsy, cut,
-                                       wname));
-    for (auto &[cutname, cutnode] : cut_nodes) {
-      hist2ds.emplace_back(draw_hists_2d(cutnode, varx, vary,
-                                         name + "_" + cutname, xmin, xmax, ymin,
-                                         ymax, nbinsx, nbinsy, cut, wname));
-    }
-  }
+  // for (auto &plot_2d_entry : analysis_entry["plot_3d"]) {
+  //   std::string name = plot_2d_entry["name"];
+  //   std::string varx = plot_2d_entry["varx"];
+  //   std::string vary = plot_2d_entry["vary"];
+  //   std::string varz = plot_2d_entry["varz"];
+  //   double xmin = plot_2d_entry.value("xmin", 0.0);
+  //   double xmax = plot_2d_entry.value("xmax", 0.0);
+  //   double ymin = plot_2d_entry.value("ymin", 0.0);
+  //   double ymax = plot_2d_entry.value("ymax", 0.0);
+  //   double zmin = plot_2d_entry.value("zmin", 0.0);
+  //   double zmax = plot_2d_entry.value("zmax", 0.0);
+  //   int nbinsx = plot_2d_entry.value("nbinsx", 128);
+  //   int nbinsy = plot_2d_entry.value("nbinsy", 128);
+  //   int nbinsz = plot_2d_entry.value("nbinsz", 128);
+  //   axis x{varx, xmin, xmax, nbinsx};
+  //   axis y{vary, ymin, ymax, nbinsy};
+  //   axis z{varz, zmin, zmax, nbinsz};
+  //   auto cut = plot_2d_entry.value("cut", nlohmann::json{});
+  //   std::string wname = plot_2d_entry.value("wname", "");
+  //   hist1ds.emplace_back(draw_hists_3d(result_node, name, x, y, z, cut,
+  //   wname)); for (auto &[cutname, cutnode] : cut_nodes) {
+  //     hist1ds.emplace_back(
+  //         draw_hists_3d(cutnode, name + "_" + cutname, x, y, z, cut, wname));
+  //   }
+  // }
+
   {
     auto &&collist = analysis_entry["output"].get<std::vector<std::string>>();
     if (!collist.empty()) {
@@ -171,9 +211,9 @@ void plugin_handle(ROOT::RDF::RNode rootnode, nlohmann::json &entry) {
   }
 
   std::vector<std::tuple<
-      std::string, std::vector<ROOT::RDF::RResultPtr<TH1D>>,
+      std::string, std::vector<ROOT::RDF::RResultPtr<TH1>>,
       std::vector<std::pair<THStack, std::vector<ROOT::RDF::RResultPtr<TH1D>>>>,
-      std::vector<ROOT::RDF::RResultPtr<TH2D>>,
+      // std::vector<ROOT::RDF::RResultPtr<TH2D>>,
       ROOT::RDF::RResultPtr<
           ROOT::RDF::RInterface<ROOT::Detail::RDF::RLoopManager>>>>
       analysis_result_handles{};
@@ -185,7 +225,7 @@ void plugin_handle(ROOT::RDF::RNode rootnode, nlohmann::json &entry) {
   // event loop should be triggered here if normalize_func is defined
   auto normalize_factor = normalize_func ? (*normalize_func)(rootnode) : 1.;
   if (normalize_factor != 1.) {
-    for (auto &&[_, hist1ds, stacks, hist2ds, __] : analysis_result_handles) {
+    for (auto &&[_, hist1ds, stacks, __] : analysis_result_handles) {
       for (auto &&hist : hist1ds) {
         hist->Scale(normalize_factor, "WIDTH");
       }
@@ -194,13 +234,10 @@ void plugin_handle(ROOT::RDF::RNode rootnode, nlohmann::json &entry) {
           hist->Scale(normalize_factor, "WIDTH");
         }
       }
-      for (auto &&hist : hist2ds) {
-        hist->Scale(normalize_factor, "WIDTH");
-      }
     }
   }
 
-  for (auto &&[filename, hist1ds, stacks, hist2ds, snapshot_action] :
+  for (auto &&[filename, hist1ds, stacks, snapshot_action] :
        analysis_result_handles) {
     std::cerr << "Writing to " << filename << std::endl;
     auto file = std::make_unique<TFile>(filename.c_str(), "RECREATE");
@@ -213,9 +250,6 @@ void plugin_handle(ROOT::RDF::RNode rootnode, nlohmann::json &entry) {
         hs.Add(hist.GetPtr());
       }
       hs.Write();
-    }
-    for (auto &&hist : hist2ds) {
-      hist->Write();
     }
     file->Write();
     file->Close();
