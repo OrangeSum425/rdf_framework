@@ -4,6 +4,7 @@
 #include "TF1.h"
 #include "TRandom3.h"
 #include <common.h>
+#include <TObjString.h>
 
 event::~event() {}
 
@@ -91,6 +92,8 @@ TLorentzVector event::get_leading_nofsi(int pdgid) const {
 void event::set_mode(event::channel m) { mode = m; }
 
 event::channel event::get_mode() const { return mode; }
+
+
 
 void event::set_weight(double w) { weight = w; }
 
@@ -975,6 +978,8 @@ ROOT::RDF::RNode MINERvAGFS_general(ROOT::RDF::RNode df) {
               {"event"})
       .Filter([](int nbkg) { return nbkg == 0; }, {"nbkg"}, "nbkg==0");
 }
+
+
 
 ROOT::RDF::RNode MINERvAGFS_do_TKI(ROOT::RDF::RNode df) {
   return df

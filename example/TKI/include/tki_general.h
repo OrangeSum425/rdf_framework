@@ -124,6 +124,9 @@ std::array<double, 8> getCommonTKI(const int targetA, const int targetZ,
 
 ROOT::RDF::RNode MINERvAGFSPIZERO_f(ROOT::RDF::RNode df);
 ROOT::RDF::RNode MINERvAGFS0PI_f(ROOT::RDF::RNode df);
+
+REGISTER_PROCESS_NODE(MINERvAGFS0PI)
+
 ROOT::RDF::RNode MINERvAGFS_general(ROOT::RDF::RNode df);
 ROOT::RDF::RNode MINERvAGFS_do_TKI(ROOT::RDF::RNode df);
 
