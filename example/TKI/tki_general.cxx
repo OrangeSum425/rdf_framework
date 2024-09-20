@@ -1043,11 +1043,22 @@ ROOT::RDF::RNode MINERvAGFSPIZERO_f(ROOT::RDF::RNode df) {
                 return good_muon.size() == 1;
               },
               {"good_muon"}, "good_muon.size()==1")
+          .Define("selected_muon_momentum", 
+                  [](ROOT::RVec<TLorentzVector> &good_muon) {
+                    return good_muon[0].P();
+                  }, 
+                  {"good_muon"})
+          .Define("selected_muon_theta", 
+                  [](ROOT::RVec<TLorentzVector> &good_muon) {
+                    return good_muon[0].Theta() * TMath::RadToDeg();
+                  }, 
+                  {"good_muon"})
           .Define("good_proton",
-                  [](ROOT::RVec<TLorentzVector> &muon_p4) {
+                  [](ROOT::RVec<TLorentzVector> &proton_p4) {
                     ROOT::RVec<TLorentzVector> v{};
-                    for (auto &p4 : muon_p4) {
+                    for (auto &p4 : proton_p4) {
                       auto mom = p4.P();
+                      auto theta = p4.Theta() * TMath::RadToDeg();
                       if (mom > 0.45) {
                         v.push_back(p4);
                       }
@@ -1070,8 +1081,17 @@ ROOT::RDF::RNode MINERvAGFSPIZERO_f(ROOT::RDF::RNode df) {
                     }
                     return p4;
                   },
-                  {"good_proton"}));
-  // return MINERvAGFS_do_TKI(df);
+                  {"good_proton"}))
+          .Define("selected_proton_momentum", 
+                  [](ROOT::RVec<TLorentzVector> &good_proton) {
+                    return good_proton[0].P();
+                  }, 
+                  {"good_proton"})
+          .Define("selected_proton_theta", 
+                  [](ROOT::RVec<TLorentzVector> &good_proton) {
+                    return good_proton[0].Theta() * TMath::RadToDeg();
+                  }, 
+                  {"good_proton"});
 }
 
 class MINERvAGFSPIZERO : public ProcessNodeI {
@@ -1133,8 +1153,31 @@ ROOT::RDF::RNode MINERvAGFS0PI_f(ROOT::RDF::RNode df) {
                     }
                     return p4;
                   },
-                  {"good_proton"}));
+                  {"good_proton"}))
+
+          .Define("selected_muon_momentum", 
+              [](ROOT::RVec<TLorentzVector> &good_muon) {
+                return good_muon[0].P();  
+              }, 
+              {"good_muon"})
+          .Define("selected_muon_theta", 
+              [](ROOT::RVec<TLorentzVector> &good_muon) {
+                return good_muon[0].Theta() * TMath::RadToDeg();  
+              }, 
+              {"good_muon"})
+
+          .Define("selected_proton_momentum", 
+              [](ROOT::RVec<TLorentzVector> &good_proton) {
+                return good_proton[0].P();  
+              }, 
+              {"good_proton"})
+          .Define("selected_proton_theta", 
+              [](ROOT::RVec<TLorentzVector> &good_proton) {
+                return good_proton[0].Theta() * TMath::RadToDeg(); 
+              }, 
+              {"good_proton"});
 }
+
 class MINERvAGFS0PI : public ProcessNodeI {
 public:
   ROOT::RDF::RNode operator()(ROOT::RDF::RNode df) override {
@@ -1143,6 +1186,9 @@ public:
 };
 
 REGISTER_PROCESS_NODE(MINERvAGFS0PI)
+
+
+
 
 // ROOT::RDF::RNode CCQEL(ROOT::RDF::RNode df) {
 //   return df.Filter([](event &e) { return e.get_mode() == event::channel::QE;

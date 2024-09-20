@@ -84,10 +84,10 @@ ROOT::RDF::RNode GENIE_RDF_setup_event(ROOT::RDF::RNode df) {
                 }
                 return e;
               },
-              {"StdHepN", "StdHepPdg", "StdHepStatus", "StdHepP4", "EvtCode"})
-      .Filter([](event &e) { return e.get_mode() != event::channel::Other; },
-              {"event"});
+              {"StdHepN", "StdHepPdg", "StdHepStatus", "StdHepP4", "EvtCode"});
 }
+
+
 
 
 
