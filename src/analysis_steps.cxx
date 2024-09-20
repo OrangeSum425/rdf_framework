@@ -40,30 +40,54 @@ prepare_chain(nlohmann::json &j) {
   return ret;
 }
 
+std::map<std::string, std::vector<double>> predefined_bins = {
+    {"IApN_PIZEROTKI", {0.0, 0.055, 0.11, 0.165, 0.22, 0.275, 0.33, 0.385, 0.44, 0.495, 0.56, 0.655, 0.81}},
+    {"dalphat_PIZEROTKI", {0.0, 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 140.0, 160.0, 180.0}},
+    {"IApN_0PITKI", {0.0, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.275, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.8}},
+    {"dalphat_0PITKI", {0.0, 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 130.0, 140.0, 150.0, 160.0, 170.0, 180.0}}
+};
+
+
 std::vector<axis> get_bins(nlohmann::json &j) {
-  std::vector<axis> ret{};
-  if (j.find("bins_list") != j.end()) {
-    for (auto &&bin_obj : j["bins_list"]) {
-      ret.push_back(
-          {bin_obj["var"], bin_obj["min"], bin_obj["max"], bin_obj["bins"]});
+    std::string varname = j["var"].get<std::string>();
+    std::string file_key = j["file_key"].get<std::string>();  
+
+    std::string bin_key = varname + "_" + file_key;
+
+    if (predefined_bins.find(bin_key) != predefined_bins.end()) {
+        const auto& bin_edges = predefined_bins[bin_key];
+        axis custom_axis;
+        custom_axis.var = varname;
+        custom_axis.bins = bin_edges.size() - 1;
+        custom_axis.min = bin_edges.front();
+        custom_axis.max = bin_edges.back();
+        return {custom_axis}; 
     }
-    return ret;
-  } else {
-    if (j.find("var") != j.end() && j.find("bins") != j.end()) { // 1D case
-      ret.push_back({j["var"], j["xmin"], j["xmax"], j["bins"]});
-      return ret;
-    } else { // 2-3D case
-      ret.push_back({j["varx"], j["xmin"], j["xmax"], j["binsx"]});
-      if (j.find("vary") != j.end()) {
-        ret.push_back({j["vary"], j["ymin"], j["ymax"], j["binsy"]});
-      }
-      if (j.find("varz") != j.end()) {
-        ret.push_back({j["varz"], j["zmin"], j["zmax"], j["binsz"]});
-      }
-      return ret;
+
+    std::vector<axis> ret{};
+    if (j.find("bins_list") != j.end()) {
+        for (auto &&bin_obj : j["bins_list"]) {
+            ret.push_back(
+                {bin_obj["var"], bin_obj["min"], bin_obj["max"], bin_obj["bins"]});
+        }
+        return ret;
+    } else {
+        if (j.find("var") != j.end() && j.find("bins") != j.end()) { // 1D case
+            ret.push_back({j["var"], j["xmin"], j["xmax"], j["bins"]});
+            return ret;
+        } else { // 2-3D case
+            ret.push_back({j["varx"], j["xmin"], j["xmax"], j["binsx"]});
+            if (j.find("vary") != j.end()) {
+                ret.push_back({j["vary"], j["ymin"], j["ymax"], j["binsy"]});
+            }
+            if (j.find("varz") != j.end()) {
+                ret.push_back({j["varz"], j["zmin"], j["zmax"], j["binsz"]});
+            }
+            return ret;
+        }
     }
-  }
 }
+
 
 auto analysis_entry_handle(ROOT::RDF::RNode preprocessed_node,
                            nlohmann::json &analysis_entry) {
@@ -126,7 +150,7 @@ auto analysis_entry_handle(ROOT::RDF::RNode preprocessed_node,
           draw_hists_nd(cutnode, name + "_" + cutname, bin_obj, cut, wname));
     }
   }
-
+  
   // plot Stacks
   for (auto &plotentry : analysis_entry["stack_plots"]) {
     std::string var = plotentry["var"];
@@ -185,44 +209,55 @@ auto analysis_entry_handle(ROOT::RDF::RNode preprocessed_node,
 }
 
 void plugin_handle(ROOT::RDF::RNode rootnode, nlohmann::json &entry) {
-  std::cout << "Processing " << entry["name"] << std::endl;
-#if ROOT_VERSION_CODE >= ROOT_VERSION(6, 30, 0)
-  ROOT::RDF::Experimental::AddProgressBar(rootnode);
-#endif
-  std::string so_name = entry["plugin"];
-  dlopen_wrap so(so_name);
+    std::cout << "Processing plugin: " << entry["name"] << std::endl;
+    
 
-  std::unique_ptr<ProcessNodeI> preprocess =
-      entry.find("preprocess") != entry.end()
-          ? get_node_process_callable(entry["preprocess"])
-          : std::make_unique<noop>();
-  if (!preprocess)
-    throw std::runtime_error("Failed to get preprocess function");
+    if (entry.contains("preprocess")) {
+        std::cout << "Preprocess field: " << entry["preprocess"] << std::endl;
+    }
+    if (entry.contains("normalize")) {
+        std::cout << "Normalize field: " << entry["normalize"] << std::endl;
+    }
+    
 
-  auto preprocessed_node = (*preprocess)(rootnode);
+    std::string so_name = entry["plugin"];
+    dlopen_wrap so(so_name);
 
-  // double norm_factor{};
-  std::unique_ptr<NormalizeI> normalize_func{};
-  if (entry.find("normalize") != entry.end()) {
-    auto normalize_conf = entry["normalize"];
-    normalize_func = get_normalize_callable(normalize_conf);
-    if (!normalize_func)
-      throw std::runtime_error("Failed to get normalize function");
-  }
+
+    std::unique_ptr<ProcessNodeI> preprocess =
+        entry.find("preprocess") != entry.end()
+            ? get_node_process_callable(entry["preprocess"])
+            : std::make_unique<noop>();
+    
+    if (!preprocess)
+        throw std::runtime_error("Failed to get preprocess function");
+
+    auto preprocessed_node = (*preprocess)(rootnode);
+
+
+    std::unique_ptr<NormalizeI> normalize_func{};
+    if (entry.find("normalize") != entry.end()) {
+        auto normalize_conf = entry["normalize"];
+        normalize_func = get_normalize_callable(normalize_conf);
+        if (!normalize_func)
+            throw std::runtime_error("Failed to get normalize function");
+    }
 
   std::vector<std::tuple<
       std::string, std::vector<ROOT::RDF::RResultPtr<TH1>>,
       std::vector<std::pair<THStack, std::vector<ROOT::RDF::RResultPtr<TH1D>>>>,
-      // std::vector<ROOT::RDF::RResultPtr<TH2D>>,
       ROOT::RDF::RResultPtr<
           ROOT::RDF::RInterface<ROOT::Detail::RDF::RLoopManager>>>>
       analysis_result_handles{};
+
   for (auto &analysis_entry : entry["analysis"]) {
+    if (!analysis_entry.is_object()) {
+      throw std::runtime_error("Each 'analysis' entry must be an object.");
+    }
     analysis_result_handles.emplace_back(
         analysis_entry_handle(preprocessed_node, analysis_entry));
   }
 
-  // event loop should be triggered here if normalize_func is defined
   auto normalize_factor = normalize_func ? (*normalize_func)(rootnode) : 1.;
   if (normalize_factor != 1.) {
     for (auto &&[_, hist1ds, stacks, __] : analysis_result_handles) {
@@ -240,6 +275,7 @@ void plugin_handle(ROOT::RDF::RNode rootnode, nlohmann::json &entry) {
   for (auto &&[filename, hist1ds, stacks, snapshot_action] :
        analysis_result_handles) {
     std::cerr << "Writing to " << filename << std::endl;
+    
     auto file = std::make_unique<TFile>(filename.c_str(), "RECREATE");
     file->cd();
     for (auto &&hist : hist1ds) {
@@ -255,3 +291,4 @@ void plugin_handle(ROOT::RDF::RNode rootnode, nlohmann::json &entry) {
     file->Close();
   }
 }
+
