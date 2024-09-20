@@ -49,43 +49,48 @@ std::map<std::string, std::vector<double>> predefined_bins = {
 
 
 std::vector<axis> get_bins(nlohmann::json &j) {
-    std::string varname = j["var"].get<std::string>();
-    std::string file_key = j["file_key"].get<std::string>();  
-
-    std::string bin_key = varname + "_" + file_key;
-
-    if (predefined_bins.find(bin_key) != predefined_bins.end()) {
-        const auto& bin_edges = predefined_bins[bin_key];
-        axis custom_axis;
-        custom_axis.var = varname;
-        custom_axis.bins = bin_edges.size() - 1;
-        custom_axis.min = bin_edges.front();
-        custom_axis.max = bin_edges.back();
-        return {custom_axis}; 
-    }
-
-    std::vector<axis> ret{};
-    if (j.find("bins_list") != j.end()) {
-        for (auto &&bin_obj : j["bins_list"]) {
-            ret.push_back(
-                {bin_obj["var"], bin_obj["min"], bin_obj["max"], bin_obj["bins"]});
-        }
-        return ret;
+  std::vector<axis> ret{};
+  auto construct_and_emplace_bin_obj = [&ret](nlohmann::json &bin_obj) {
+    if (bin_obj.contains("bin_edges")) {
+      auto bin_edges = bin_obj["bin_edges"].get<std::vector<double>>();
+      ret.emplace_back(
+          axis_non_uniform{.var = bin_obj["var"], .bin_edges = bin_edges});
     } else {
-        if (j.find("var") != j.end() && j.find("bins") != j.end()) { // 1D case
-            ret.push_back({j["var"], j["xmin"], j["xmax"], j["bins"]});
-            return ret;
-        } else { // 2-3D case
-            ret.push_back({j["varx"], j["xmin"], j["xmax"], j["binsx"]});
-            if (j.find("vary") != j.end()) {
-                ret.push_back({j["vary"], j["ymin"], j["ymax"], j["binsy"]});
-            }
-            if (j.find("varz") != j.end()) {
-                ret.push_back({j["varz"], j["zmin"], j["zmax"], j["binsz"]});
-            }
-            return ret;
-        }
+      ret.emplace_back(axis_uniform{.var = bin_obj["var"],
+                                    .min = bin_obj["min"],
+                                    .max = bin_obj["max"],
+                                    .bins = bin_obj["bins"]});
     }
+  };
+  if (j.find("bins_list") != j.end()) {
+    for (auto &&bin_obj : j["bins_list"]) {
+      construct_and_emplace_bin_obj(bin_obj);
+    }
+    return ret;
+  }
+  if (j.find("var") != j.end() && (j.find("bins") != j.end() ||
+                                   j.find("bin_edges") != j.end())) { // 1D case
+    construct_and_emplace_bin_obj(j);
+    return ret;
+  }
+  // 2-3D case
+  ret.emplace_back(axis_uniform{.var = j["varx"],
+                                .min = j["xmin"],
+                                .max = j["xmax"],
+                                .bins = j["binsx"]});
+  if (j.find("vary") != j.end()) {
+    ret.emplace_back(axis_uniform{.var = j["vary"],
+                                  .min = j["ymin"],
+                                  .max = j["ymax"],
+                                  .bins = j["binsy"]});
+  }
+  if (j.find("varz") != j.end()) {
+    ret.emplace_back(axis_uniform{.var = j["varz"],
+                                  .min = j["zmin"],
+                                  .max = j["zmax"],
+                                  .bins = j["binsz"]});
+  }
+  return ret;
 }
 
 
@@ -155,44 +160,17 @@ auto analysis_entry_handle(ROOT::RDF::RNode preprocessed_node,
   for (auto &plotentry : analysis_entry["stack_plots"]) {
     std::string var = plotentry["var"];
     std::string name = plotentry["name"];
-    double xmin = plotentry.value("xmin", 0);
-    double xmax = plotentry.value("xmax", 0);
-    int nbins = plotentry.value("nbins", 128);
     std::string wname = plotentry.value("wname", "");
     auto &&[hs, histvec] = plots.emplace_back(
         std::make_pair(THStack{(name + "hs").c_str(), var.c_str()},
                        std::vector<ROOT::RDF::RResultPtr<TH1D>>{}));
-    axis x{var, xmin, xmax, nbins};
+    // axis x{axis_uniform{var, xmin, xmax, nbins}};
+    auto bin_obj = get_bins(plotentry);
     for (auto &cutentry : plotentry["cuts"]) {
-      histvec.emplace_back(draw_hists(result_node, name, x, cutentry, wname));
+      histvec.emplace_back(
+          draw_hists(result_node, name, get_axis(bin_obj[0]), cutentry, wname));
     }
   }
-
-  // for (auto &plot_2d_entry : analysis_entry["plot_3d"]) {
-  //   std::string name = plot_2d_entry["name"];
-  //   std::string varx = plot_2d_entry["varx"];
-  //   std::string vary = plot_2d_entry["vary"];
-  //   std::string varz = plot_2d_entry["varz"];
-  //   double xmin = plot_2d_entry.value("xmin", 0.0);
-  //   double xmax = plot_2d_entry.value("xmax", 0.0);
-  //   double ymin = plot_2d_entry.value("ymin", 0.0);
-  //   double ymax = plot_2d_entry.value("ymax", 0.0);
-  //   double zmin = plot_2d_entry.value("zmin", 0.0);
-  //   double zmax = plot_2d_entry.value("zmax", 0.0);
-  //   int nbinsx = plot_2d_entry.value("nbinsx", 128);
-  //   int nbinsy = plot_2d_entry.value("nbinsy", 128);
-  //   int nbinsz = plot_2d_entry.value("nbinsz", 128);
-  //   axis x{varx, xmin, xmax, nbinsx};
-  //   axis y{vary, ymin, ymax, nbinsy};
-  //   axis z{varz, zmin, zmax, nbinsz};
-  //   auto cut = plot_2d_entry.value("cut", nlohmann::json{});
-  //   std::string wname = plot_2d_entry.value("wname", "");
-  //   hist1ds.emplace_back(draw_hists_3d(result_node, name, x, y, z, cut,
-  //   wname)); for (auto &[cutname, cutnode] : cut_nodes) {
-  //     hist1ds.emplace_back(
-  //         draw_hists_3d(cutnode, name + "_" + cutname, x, y, z, cut, wname));
-  //   }
-  // }
 
   {
     auto &&collist = analysis_entry["output"].get<std::vector<std::string>>();

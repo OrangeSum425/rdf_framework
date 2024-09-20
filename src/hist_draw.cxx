@@ -20,105 +20,108 @@ ROOT::RDF::RNode do_cut(ROOT::RDF::RNode node, nlohmann::json &cut) {
 }
 
 ROOT::RDF::RResultPtr<TH1D> draw_hists(ROOT::RDF::RNode noderaw,
-                                       std::string name, axis x,
+                                       std::string name, axis_non_uniform x,
                                        nlohmann::json &cut,
                                        std::string_view wname) {
   auto node = do_cut(noderaw, cut);
   auto &var = x.var;
-  auto &xmin = x.min;
-  auto &xmax = x.max;
-  auto &nbins = x.bins;
+  auto &bin_edges = x.bin_edges;
+  auto nbins = bin_edges.size() - 1;
   auto hist = wname.empty()
                   ? node.Histo1D(ROOT::RDF::TH1DModel{name.data(), var.data(),
-                                                      nbins, xmin, xmax},
+                                                      static_cast<int>(nbins),
+                                                      bin_edges.data()},
                                  var)
                   : node.Histo1D(ROOT::RDF::TH1DModel{name.data(), var.data(),
-                                                      nbins, xmin, xmax},
+                                                      static_cast<int>(nbins),
+                                                      bin_edges.data()},
                                  var, wname);
   return hist;
 }
 
-ROOT::RDF::RResultPtr<TH2D> draw_hists_2d(ROOT::RDF::RNode rawnode,
-                                          std::string name, axis x, axis y,
-                                          nlohmann::json &cut,
-                                          std::string_view wname) {
+ROOT::RDF::RResultPtr<TH2D>
+draw_hists_2d(ROOT::RDF::RNode rawnode, std::string name, axis_non_uniform x,
+              axis_non_uniform y, nlohmann::json &cut, std::string_view wname) {
   auto node = do_cut(rawnode, cut);
   auto &varx = x.var;
-  auto &xmin = x.min;
-  auto &xmax = x.max;
-  auto &nbinsx = x.bins;
+  auto &&xbin_edges = x.bin_edges;
   auto &vary = y.var;
-  auto &ymin = y.min;
-  auto &ymax = y.max;
-  auto &nbinsy = y.bins;
+  auto &&ybin_edges = y.bin_edges;
+  // auto &ymin = y.min;
+  // auto &ymax = y.max;
+  // auto &nbinsy = y.bins;
   auto hist =
       wname.empty()
-          ? node.Histo2D(ROOT::RDF::TH2DModel{name.data(), varx.data(), nbinsx,
-                                              xmin, xmax, nbinsy, ymin, ymax},
-                         varx, vary)
+          ? node.Histo2D(
+                ROOT::RDF::TH2DModel{
+                    name.data(), varx.data(),
+                    static_cast<int>(xbin_edges.size() - 1), xbin_edges.data(),
+                    static_cast<int>(ybin_edges.size() - 1), ybin_edges.data()},
+                varx, vary)
 
-          : node.Histo2D(ROOT::RDF::TH2DModel{name.data(), varx.data(), nbinsx,
-                                              xmin, xmax, nbinsy, ymin, ymax},
-                         varx, vary, wname);
+          : node.Histo2D(
+                ROOT::RDF::TH2DModel{
+                    name.data(), varx.data(),
+                    static_cast<int>(xbin_edges.size() - 1), xbin_edges.data(),
+                    static_cast<int>(ybin_edges.size() - 1), ybin_edges.data()},
+                varx, vary, wname);
   return hist;
 }
 
-ROOT::RDF::RResultPtr<TH3D> draw_hists_3d(ROOT::RDF::RNode rawnode,
-                                          std::string name, axis x, axis y,
-                                          axis z, nlohmann::json &cut,
-                                          std::string_view wname) {
+ROOT::RDF::RResultPtr<TH3D>
+draw_hists_3d(ROOT::RDF::RNode rawnode, std::string name, axis_non_uniform x,
+              axis_non_uniform y, axis_non_uniform z, nlohmann::json &cut,
+              std::string_view wname) {
   auto node = do_cut(rawnode, cut);
   auto &varx = x.var;
-  auto &xmin = x.min;
-  auto &xmax = x.max;
-  auto &nbinsx = x.bins;
+  auto &&xbin_edges = x.bin_edges;
   auto &vary = y.var;
-  auto &ymin = y.min;
-  auto &ymax = y.max;
-  auto &nbinsy = y.bins;
+  auto &&ybin_edges = y.bin_edges;
   auto &varz = z.var;
-  auto &zmin = z.min;
-  auto &zmax = z.max;
-  auto &nbinsz = z.bins;
+  auto &&zbin_edges = z.bin_edges;
   auto hist =
       wname.empty()
-          ? node.Histo3D(ROOT::RDF::TH3DModel{name.data(), varx.data(), nbinsx,
-                                              xmin, xmax, nbinsy, ymin, ymax,
-                                              nbinsz, zmin, zmax},
-                         varx, vary, varz)
+          ? node.Histo3D(
+                ROOT::RDF::TH3DModel{
+                    name.data(), varx.data(),
+                    static_cast<int>(xbin_edges.size() - 1), xbin_edges.data(),
+                    static_cast<int>(ybin_edges.size() - 1), ybin_edges.data(),
+                    static_cast<int>(zbin_edges.size() - 1), zbin_edges.data()},
+                varx, vary, varz)
 
-          : node.Histo3D(ROOT::RDF::TH3DModel{name.data(), varx.data(), nbinsx,
-                                              xmin, xmax, nbinsy, ymin, ymax,
-                                              nbinsz, zmin, zmax},
-                         varx, vary, varz, wname);
+          : node.Histo3D(
+                ROOT::RDF::TH3DModel{
+                    name.data(), varx.data(),
+                    static_cast<int>(xbin_edges.size() - 1), xbin_edges.data(),
+                    static_cast<int>(ybin_edges.size() - 1), ybin_edges.data(),
+                    static_cast<int>(zbin_edges.size() - 1), zbin_edges.data()},
+                varx, vary, varz, wname);
   return hist;
 }
 
-ROOT::RDF::RResultPtr<THn> draw_hists_nd_imp(ROOT::RDF::RNode rawnode,
-                                             std::string name,
-                                             std::vector<axis> axes,
-                                             nlohmann::json &cut,
-                                             std::string_view wname) {
-  auto node = do_cut(rawnode, cut);
-  auto dim = axes.size();
-  std::vector<double> bin_low, bin_up;
-  std::vector<int> bins;
-  std::vector<std::string> vars;
-  for (auto &ax : axes) {
-    vars.push_back(ax.var);
-    bin_low.push_back(ax.min);
-    bin_up.push_back(ax.max);
-    bins.push_back(ax.bins);
-  }
-  if (!wname.empty()) {
-    vars.push_back(wname.data());
-  }
-  return node.HistoND(ROOT::RDF::THnDModel{name.data(), name.data(), (int)dim,
-                                           bins, bin_low, bin_up},
-                      vars);
+
+axis_non_uniform get_axis(axis &ax) {
+  return std::visit(
+      [](auto &&arg) -> axis_non_uniform {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, axis_uniform>) {
+          axis_uniform &a = arg;
+          auto min = a.min;
+          auto max = a.max;
+          auto bins = a.bins;
+          auto bin_width = (max - min) / bins;
+          std::vector<double> bin_edges(bins + 1);
+          for (int i = 0; i <= bins; i++) {
+            bin_edges[i] = min + i * bin_width;
+          }
+          return axis_non_uniform{.var = a.var, .bin_edges = bin_edges};
+        } else if constexpr (std::is_same_v<T, axis_non_uniform>) {
+          return arg;
+        }
+      },
+      ax);
 }
 
-// std::variant<ROOT::RDF::RResultPtr<TH1>, ROOT::RDF::RResultPtr<THn>>
 ROOT::RDF::RResultPtr<TH1> draw_hists_nd(ROOT::RDF::RNode rawnode,
                                          std::string name,
                                          std::vector<axis> axes,
@@ -126,11 +129,13 @@ ROOT::RDF::RResultPtr<TH1> draw_hists_nd(ROOT::RDF::RNode rawnode,
                                          std::string_view wname) {
   switch (axes.size()) {
   case 1:
-    return draw_hists(rawnode, name, axes[0], cut, wname);
+    return draw_hists(rawnode, name, get_axis(axes[0]), cut, wname);
   case 2:
-    return draw_hists_2d(rawnode, name, axes[0], axes[1], cut, wname);
+    return draw_hists_2d(rawnode, name, get_axis(axes[0]), get_axis(axes[1]),
+                         cut, wname);
   case 3:
-    return draw_hists_3d(rawnode, name, axes[0], axes[1], axes[2], cut, wname);
+    return draw_hists_3d(rawnode, name, get_axis(axes[0]), get_axis(axes[1]),
+                         get_axis(axes[2]), cut, wname);
   default:
     throw std::runtime_error("THnD not implemented yet");
     // the code of drawing the THnD is ready

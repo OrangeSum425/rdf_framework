@@ -36,36 +36,41 @@
             {
               "var": "Q2",
               "name": "Q2",
-              "xmin": 0,
-              "xmax": 10,
-              "bins": 128
+              "bin_edges": [0,1,2,3,4,5,6,8,10,20]
             },
             {
               "var": "n_neutron_d",
               "name": "n_neutron",
-              "xmin": -0.5,
-              "xmax": 12.5,
+              "min": -0.5,
+              "max": 12.5,
               "bins": 13
             },
             {
               "var": "W",
               "name": "W",
-              "xmin": 0,
-              "xmax": 6,
+              "min": 0,
+              "max": 6,
               "bins": 128
             },
             {
               "var": "xBj",
               "name": "xBj",
-              "xmin": 0,
-              "xmax": 1.1,
+              "min": 0,
+              "max": 1.1,
+              "bins": 128
+            },
+            {
+              "var": "xBj_rest",
+              "name": "xBj_rest",
+              "min": 0,
+              "max": 1.1,
               "bins": 128
             },
             {
               "var": "y",
               "name": "y",
-              "xmin": 0,
-              "xmax": 1.0,
+              "min": 0,
+              "max": 1.0,
               "bins": 128
             },
             {
@@ -154,7 +159,7 @@
               ]
             },
             {
-              "name": "th3d_Q2_W_xbj",
+              "name": "th3d_Q2_W_xbj_rest",
               "bins_list": [
                 {
                   "var": "Q2",
@@ -169,7 +174,7 @@
                   "bins": 16
                 },
                 {
-                  "var": "xBj",
+                  "var": "xBj_rest",
                   "min": 0,
                   "max": 1.2,
                   "bins": 5
@@ -200,7 +205,7 @@
               ]
             },
             {
-              "name": "th3d_enu_x_y",
+              "name": "th3d_enu_xBj_rest_y",
               "bins_list": [
                 {
                   "var": "Enu",

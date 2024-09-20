@@ -27,110 +27,110 @@
           {
             "var": "dalphat",
             "name": "dalphat",
-            "xmin": 0,
-            "xmax": 180,
+            "min": 0,
+            "max": 180,
             "bins": 128
           },
           {
             "var": "IApN",
             "name": "IApN",
-            "xmin": 0,
-            "xmax": 0.8,
+            "min": 0,
+            "max": 0.8,
             "bins": 128
           },
           {
             "var": "dalphat",
             "name": "dalphat_CCRESPure",
-            "xmin": 0,
-            "xmax": 180,
+            "min": 0,
+            "max": 180,
             "bins": 128,
             "cut": "CCRESPure"
           },
           {
             "var": "IApN",
             "name": "IApN_CCRESPure",
-            "xmin": 0,
-            "xmax": 0.8,
+            "min": 0,
+            "max": 0.8,
             "bins": 128,
             "cut": "CCRESPure"
           },
           {
             "var": "dalphat",
             "name": "dalphat_CCRESPYTHIA",
-            "xmin": 0,
-            "xmax": 180,
+            "min": 0,
+            "max": 180,
             "bins": 128,
             "cut": "CCRESPYTHIA"
           },
           {
             "var": "IApN",
             "name": "IApN_CCRESPYTHIA",
-            "xmin": 0,
-            "xmax": 0.8,
+            "min": 0,
+            "max": 0.8,
             "bins": 128,
             "cut": "CCRESPYTHIA"
           },
           {
             "var": "dalphat",
             "name": "dalphat_CCRESPure1pi",
-            "xmin": 0,
-            "xmax": 180,
+            "min": 0,
+            "max": 180,
             "bins": 128,
             "cut": "CCRESPure1pi"
           },
           {
             "var": "IApN",
             "name": "IApN_CCRESPure1pi",
-            "xmin": 0,
-            "xmax": 0.8,
+            "min": 0,
+            "max": 0.8,
             "bins": 128,
             "cut": "CCRESPure1pi"
           },
           {
             "var": "dalphat",
             "name": "dalphat_CCRESPYTHIA1pi",
-            "xmin": 0,
-            "xmax": 180,
+            "min": 0,
+            "max": 180,
             "bins": 128,
             "cut": "CCRESPYTHIA1pi"
           },
           {
             "var": "IApN",
             "name": "IApN_CCRESPYTHIA1pi",
-            "xmin": 0,
-            "xmax": 0.8,
+            "min": 0,
+            "max": 0.8,
             "bins": 128,
             "cut": "CCRESPYTHIA1pi"
           },
           {
             "var": "dalphat",
             "name": "dalphat_CCRESPureMpi",
-            "xmin": 0,
-            "xmax": 180,
+            "min": 0,
+            "max": 180,
             "bins": 128,
             "cut": "CCRESPureMpi"
           },
           {
             "var": "IApN",
             "name": "IApN_CCRESPureMpi",
-            "xmin": 0,
-            "xmax": 0.8,
+            "min": 0,
+            "max": 0.8,
             "bins": 128,
             "cut": "CCRESPureMpi"
           },
           {
             "var": "dalphat",
             "name": "dalphat_CCRESPYTHIAMpi",
-            "xmin": 0,
-            "xmax": 180,
+            "min": 0,
+            "max": 180,
             "bins": 128,
             "cut": "CCRESPYTHIAMpi"
           },
           {
             "var": "IApN",
             "name": "IApN_CCRESPYTHIAMpi",
-            "xmin": 0,
-            "xmax": 0.8,
+            "min": 0,
+            "max": 0.8,
             "bins": 128,
             "cut": "CCRESPYTHIAMpi"
           }

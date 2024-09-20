@@ -32,16 +32,16 @@
             {
               "var": "dalphat",
               "name": "dalphat",
-              "xmin": 0,
-              "xmax": 0,
+              "min": 0,
+              "max": 0,
               "bins": 128,
               "cut": ""
             },
             {
               "var": "IApN",
               "name": "IApN",
-              "xmin": 0,
-              "xmax": 0,
+              "min": 0,
+              "max": 0,
               "bins": 128,
               "cut": ""
             }
@@ -62,16 +62,16 @@
             {
               "var": "dalphat",
               "name": "dalphat",
-              "xmin": 0,
-              "xmax": 0,
+              "min": 0,
+              "max": 0,
               "bins": 128,
               "cut": ""
             },
             {
               "var": "IApN",
               "name": "IApN",
-              "xmin": 0,
-              "xmax": 0,
+              "min": 0,
+              "max": 0,
               "bins": 128,
               "cut": ""
             }

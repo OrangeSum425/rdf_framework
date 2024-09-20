@@ -5,12 +5,12 @@
 
 class dlopen_wrap {
 public:
-  dlopen_wrap(std::string_view name, int flag = RTLD_NOW);
+  dlopen_wrap(const std::string& name, int flag = RTLD_NOW);
   ~dlopen_wrap();
   void *get_handle();
   void *get_symbol(const char *symbol);
-  dlopen_wrap(dlopen_wrap &&);
-  dlopen_wrap &operator=(dlopen_wrap &&);
+  dlopen_wrap(dlopen_wrap &&) noexcept ;
+  dlopen_wrap &operator=(dlopen_wrap &&) noexcept ;
 
 private:
   void *handle{};

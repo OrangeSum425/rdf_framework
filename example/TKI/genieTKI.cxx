@@ -1,20 +1,18 @@
-#include <TObjString.h>
-#include <array>
 #include "TF1.h"
-#include "common.h"
 #include "TRandom3.h"
+#include "common.h"
 #include <ROOT/RDF/RInterface.hxx>
 #include <ROOT/RDataFrame.hxx>
 #include <TLorentzVector.h>
+#include <TObjString.h>
 #include <TSpline.h>
 #include <array>
 #include <iostream>
 #include <map>
 #include <set>
+#include <tki_general.h>
 #include <type_traits>
 #include <vector>
-#include <optional>
-#include <tki_general.h>
 
 event::channel get_mode_genie(const TObjString &code) {
   if (code.GetString().Contains("QES")) {
