@@ -959,6 +959,15 @@ ROOT::RDF::RNode MINERvAGFS_general(ROOT::RDF::RNode df) {
           {"proton_p4"}, "proton_p4.size()!=0")
       .Define("W", [](event &e) { return e.getW_nofsi(); }, {"event"})
       .Define("Q2", [](event &e) { return e.getQ2(); }, {"event"})
+      .Define("mode", [](event &e) { return e.get_mode(); }, {"event"})
+      .Filter(
+          [](event::channel mode, double W) {
+            if (mode == event::channel::QE) {
+              return W <= 1.5;
+            }
+            return true;
+          },
+          {"mode", "W"}, "QE: W <= 1.5")
       .Define("nbkg",
               [](event &e) {
                 int nbkg{};

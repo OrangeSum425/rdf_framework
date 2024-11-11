@@ -88,6 +88,7 @@ public:
     auto num = df.Count();
     auto norm = mean.GetValue() / num.GetValue();
     norm/= 1e38;
+    std::cout << "Cross section per nucleon: " << norm << std::endl;
     return norm;
   }
 };
@@ -105,6 +106,47 @@ public:
         {"event"}, "CUTRES");
   }
 };
+REGISTER_PROCESS_NODE(CCQEPure)
+class CCRESPure : public ProcessNodeI {
+public:
+  ROOT::RDF::RNode operator()(ROOT::RDF::RNode df) override {
+    return df.Filter(
+        [](event &e) {
+          return e.get_mode() == event::channel::RES;
+        },
+        {"event"}, "CUTRES");
+  }
+};
+REGISTER_PROCESS_NODE(CCRESPure)
+class CCDISPure : public ProcessNodeI {
+public:
+  ROOT::RDF::RNode operator()(ROOT::RDF::RNode df) override {
+    return df.Filter(
+        [](event &e) {
+          return e.get_mode() == event::channel::DIS;
+        },
+        {"event"}, "CUTRES");
+  }
+};
+REGISTER_PROCESS_NODE(CCDISPure)
+
+class CCMECPure : public ProcessNodeI {
+public:
+  ROOT::RDF::RNode operator()(ROOT::RDF::RNode df) override {
+    return df.Filter(
+        [](event &e) {
+          return e.get_mode() == event::channel::MEC;
+        },
+        {"event"}, "CUTRES");
+  }
+};
+REGISTER_PROCESS_NODE(CCMECPure)
+
+
+
+
+
+
 class CCQEPure0pi : public ProcessNodeI {
 public:
   ROOT::RDF::RNode operator()(ROOT::RDF::RNode df) override {
@@ -176,7 +218,7 @@ public:
     return df.Filter(
         [](event &e) {
           return e.get_mode() == event::channel::RES &&
-                 (e.count_out(211) + e.count_out(111) + e.count_out(-211)) == 1;
+                 (e.count_out(211) + e.count_out(111) + e.count_out(-211))  == 1;
         },
         {"event"}, "CUTRES");
   }
@@ -190,7 +232,7 @@ public:
     return df.Filter(
         [](event &e) {
           return e.get_mode() == event::channel::RES &&
-                 (e.count_out(211) + e.count_out(111) + e.count_out(-211)) > 1;
+                 e.count_out(111)  > 1;
         },
         {"event"}, "CUTRES");
   }
@@ -204,7 +246,7 @@ public:
     return df.Filter(
         [](event &e) {
           return e.get_mode() == event::channel::DIS &&
-                 (e.count_out(211) + e.count_out(111) + e.count_out(-211)) == 1;
+                 e.count_out(111)  == 1;
         },
         {"event"}, "CUTRES");
   }
@@ -218,7 +260,7 @@ public:
     return df.Filter(
         [](event &e) {
           return e.get_mode() == event::channel::DIS &&
-                 (e.count_out(211) + e.count_out(111) + e.count_out(-211)) > 1;
+                 e.count_out(111)  > 1;
         },
         {"event"}, "CUTRES");
   }
@@ -245,7 +287,7 @@ public:
     return df.Filter(
         [](event &e, int flag_delta) {
           return e.get_mode() == event::channel::RES && !flag_delta &&
-                 (e.count_out(211) + e.count_out(111) + e.count_out(-211)) == 1;
+                 e.count_out(111)  == 1;
         },
         {"event", "flag_delta"}, "CUTRES");
   }
@@ -260,7 +302,7 @@ public:
     return df.Filter(
         [](event &e, int flag_delta) {
           return e.get_mode() == event::channel::RES && !flag_delta &&
-                 (e.count_out(211) + e.count_out(111) + e.count_out(-211)) > 1;
+                 e.count_out(111)  > 1;
         },
         {"event", "flag_delta"}, "CUTRES");
   }
@@ -275,7 +317,7 @@ public:
     return df.Filter(
         [](event &e) {
           return e.get_mode() == event::channel::QE &&
-                 (e.count_out(211) + e.count_out(111) + e.count_out(-211)) == 1;
+                 e.count_out(111)  == 1;
         },
         {"event"}, "CUTRES");
   }
