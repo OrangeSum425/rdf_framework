@@ -84,6 +84,16 @@ class ANALYSIS : public ProcessNodeI {
                   return GenEvent.count_particle_out(2112);
                 },
                 {"GenEvent"})
+        .Define("leading_neutron_p4", 
+                [](const event &GenEvent) {
+                  return GenEvent.get_leading_out(2112); 
+                },
+                {"GenEvent"})
+        .Define("leading_neutron_momentum", 
+                [](const TLorentzVector &neutron_p4) {
+                  return neutron_p4.P(); 
+                },
+                {"leading_neutron_p4"})
         .Define("n_neutron_d",
                 [](size_t n_neutron) { return static_cast<double>(n_neutron); },
                 {"n_neutron"}) // just for the sake of histogramming
@@ -91,6 +101,16 @@ class ANALYSIS : public ProcessNodeI {
         .Define("is_qel",
                 [](const event &GenEvent) {
                   return GenEvent.get_interaction() == interaction_channel::qel;
+                },
+                {"GenEvent"})
+        .Define("is_res",
+                [](const event &GenEvent) {
+                  return GenEvent.get_interaction() == interaction_channel::res;
+                },
+                {"GenEvent"}) 
+        .Define("is_dis",
+                [](const event &GenEvent) {
+                  return GenEvent.get_interaction() == interaction_channel::dis;
                 },
                 {"GenEvent"});
   }

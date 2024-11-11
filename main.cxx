@@ -50,33 +50,34 @@ int main(int argc, char **argv) {
 
   auto &&plugins_entry = j["plugins"];
   if (plugins_entry.is_array()) {
-    for (auto &&p : plugins_entry) {
-      try {
-        plugin_handle(rootnode, p);
-      } catch (std::exception &e) {
-        std::cerr << "Failed to run plugin: " << p["name"].get<std::string>()
-                  << "\n\t" << e.what() << "\n\t"
-                  << "Skipping..." << std::endl;
-      } catch (...) {
-        std::cerr << "Failed to run plugin: " << p["name"].get<std::string>()
-                  << "\n\t"
-                  << "Skipping..." << std::endl;
+      for (auto &&p : plugins_entry) {
+          try {
+              std::cout << "Attempting to run plugin: " << p["name"] << std::endl;
+              plugin_handle(rootnode, p);
+          } catch (std::exception &e) {
+              std::cerr << "Failed to run plugin: " << p["name"].get<std::string>()
+                        << "\n\t" << e.what() << "\n\t"
+                        << "Skipping..." << std::endl;
+          } catch (...) {
+             std::cerr << "Failed to run plugin: " << p["name"].get<std::string>()
+                       << "\n\t"
+                       << "Skipping..." << std::endl;
+          }
       }
-    }
   } else {
-    try {
-      plugin_handle(rootnode, plugins_entry);
-    } catch (std::exception &e) {
-      std::cerr << "Failed to run plugin: "
-                << plugins_entry["name"].get<std::string>() << "\n\t"
-                << e.what() << std::endl;
-      std::exit(1);
-    } catch (...) {
-      std::cerr << "Failed to run plugin: "
-                << plugins_entry["name"].get<std::string>() << std::endl;
-      std::exit(1);
-    }
+      try {
+          std::cout << "Attempting to run plugin: " << plugins_entry["name"] << std::endl;
+          plugin_handle(rootnode, plugins_entry);
+      } catch (std::exception &e) {
+         std::cerr << "Failed to run plugin: "
+                    << plugins_entry["name"].get<std::string>() << "\n\t"
+                    << e.what() << "\n\t"
+                    << "Skipping..." << std::endl;
+      } catch (...) {
+          std::cerr << "Failed to run plugin: "
+                    << plugins_entry["name"].get<std::string>() << "\n\t"
+                    << "Skipping..." << std::endl;
+      }
   }
-
   return 0;
 }
