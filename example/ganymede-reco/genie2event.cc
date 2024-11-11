@@ -143,7 +143,8 @@ public:
               [](const ROOT::RVec<double> &StdHepP4) { return StdHepP4[3]; },
               {"StdHepP4"})
           .Histo1D(h_model, "neutrinoE");
-    };
+    };    
+
     auto h_nu_mu_C12 = get_hist_neutrinoE_cc(14, 1000060120);
     auto h_nu_mu_bar_C12 = get_hist_neutrinoE_cc(-14, 1000060120);
     auto h_nu_mu_H1 = get_hist_neutrinoE_cc(14, 2212);
@@ -156,14 +157,14 @@ public:
 
     auto event_count = dfcc.Count().GetValue();
     auto total_fluxint =
-        get_fuxint(h_nu_mu_C12.GetPtr(), nu_mu_C12) * 12 +
+        get_fuxint(h_nu_mu_C12.GetPtr(), nu_mu_C12)* 12+
         get_fuxint(h_nu_mu_bar_C12.GetPtr(), nu_mu_bar_C12) * 12 +
-        get_fuxint(h_nu_mu_H1.GetPtr(), nu_mu_H1) +
-        get_fuxint(h_nu_mu_bar_H1.GetPtr(), nu_mu_bar_H1) +
+        get_fuxint(h_nu_mu_H1.GetPtr(), nu_mu_H1) * 1.6 +
+        get_fuxint(h_nu_mu_bar_H1.GetPtr(), nu_mu_bar_H1) * 1.6 +
         get_fuxint(h_nu_e_C12.GetPtr(), nu_e_C12) * 12 +
-        get_fuxint(h_nu_e_bar_C12.GetPtr(), nu_e_bar_C12) * 12 +
-        get_fuxint(h_nu_e_H1.GetPtr(), nu_e_H1) +
-        get_fuxint(h_nu_e_bar_H1.GetPtr(), nu_e_bar_H1);
+        get_fuxint(h_nu_e_bar_C12.GetPtr(), nu_e_bar_C12) * 12+
+        get_fuxint(h_nu_e_H1.GetPtr(), nu_e_H1) * 1.6 +
+        get_fuxint(h_nu_e_bar_H1.GetPtr(), nu_e_bar_H1) * 1.6;
         
     auto xsec_per_nucleon = event_count / total_fluxint;
     // per nucleus to per nucleon
@@ -172,6 +173,7 @@ public:
     std::cout << "Total fluxint: " << total_fluxint << std::endl;
     std::cout << "Cross section per nucleon: " << xsec_per_nucleon << std::endl;
     return res / event_count;
+    //return res;
   }
 
   void configure(const nlohmann::json &conf) override {
